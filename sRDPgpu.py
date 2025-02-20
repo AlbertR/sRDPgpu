@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import os
+import base64
+import subprocess
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
 import subprocess
 
@@ -14,6 +17,11 @@ class RDPConnector(QWidget):
 
         layout = QVBoxLayout()
 
+        self.label_workstation = QLabel('Имя станции:')
+        self.edit_workstation = QLineEdit()
+        layout.addWidget(self.label_workstation)
+        layout.addWidget(self.edit_workstation)
+
         self.label_login = QLabel('Логин:')
         self.edit_login = QLineEdit()
         layout.addWidget(self.label_login)
@@ -26,12 +34,13 @@ class RDPConnector(QWidget):
         layout.addWidget(self.edit_password)
 
         self.button_connect = QPushButton('Подключиться')
-        self.button_connect.clicked.connect(self.connect_to_rdp)
+        # self.button_connect.clicked.connect(self.connect_to_rdp)
         layout.addWidget(self.button_connect)
 
         self.setLayout(layout)
 
     def connect_to_rdp(self):
+        workstation = self.edit_workstation.text()
         login = self.edit_login.text()
         password = self.edit_password.text()
 
