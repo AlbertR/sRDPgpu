@@ -12,6 +12,9 @@
     <Name>sRDPgpu</Name>
     <RootNamespace>sRDPgpu</RootNamespace>
     <IsWindowsApplication>True</IsWindowsApplication>
+    <TestFramework>none</TestFramework>
+    <UnitTestPattern>test*.py</UnitTestPattern>
+    <UnitTestRootDirectory>.</UnitTestRootDirectory>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
