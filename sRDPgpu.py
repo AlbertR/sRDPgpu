@@ -9,7 +9,7 @@ import subprocess
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
-from pyuac import main_requires_admin
+import pyuac
 
 
 LOGO_BASE64 = """
@@ -18,7 +18,6 @@ iVBORw0KGgoAAAANSUhEUgAABqUAAAEbCAYAAABTKY4oAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFn
 CERT_BASE64 =  """
 LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlDN0RDQ0FkU2dBd0lCQWdJUVR2dmkxQnFQUGF4R1cwTStCejNOOURBTkJna3Foa2lHOXcwQkFRc0ZBREFmDQpNUjB3R3dZRFZRUURFeFJtZEhBdWNtRmtkV2RoWkdWemFXZHVMbU52YlRBZUZ3MHlOVEF4TWpVeE5URXhNalZhDQpGdzB5TlRBM01qY3hOVEV4TWpWYU1COHhIVEFiQmdOVkJBTVRGR1owY0M1eVlXUjFaMkZrWlhOcFoyNHVZMjl0DQpNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQTQvTmRPT1F0Mnh3T1V0eWpuSWgxDQpkU1pXZW1SUEdPZDFkdjFIMXpKdDBOOEs4bWJtNWluaXZ3VGRCaGpQWFQrOTluUUlvakI1RUQydFR2OURGTklyDQpVK0ZDalpOTlQrZGFDQUR2anJJRFRZQzBhUHFuTmVCTi9nSVZza0hRL2pKY1RUNmpzdU41NStjYmZibDAxRENtDQpZNjFuS1RzcEw4cy96SFpBakRNZGQ3emhFRlA3YUd5QTV6RExZcVE4TGMxbzNwMXB4QjlOcHFFbDZIWGF6QWZ3DQpoUWx2NFM2VkJRQkl3VS8yWDNUNWVyb05NOFRHTmNQMDI1ckVra1pVcW5rbUJxL1prSVh1SG9wTkx2MXBoNzdiDQowMFZVdnRlWFVTTUNsVms5QlNZNjBmc0Nwa1lvQUxMekFmaExhdWUxdU1LazhzbVFTQzVZYjFDWFVSdUtoV01yDQpVUUlEQVFBQm95UXdJakFUQmdOVkhTVUVEREFLQmdnckJnRUZCUWNEQVRBTEJnTlZIUThFQkFNQ0JEQXdEUVlKDQpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFNbEJucU1rUWpGU3Z1TzAyL1grK0hud1hYL3VlSW9iVjY0aGdoYTdzb3lWDQpYbGMwb2RGODRGWjltRllrcDR5dGlWWWIzR0pTcXZRR2dvYm5Yd3lqazFTNDVTOVBhM084d3hYR1RmdU9SUmI4DQo0ZXBnMnpsb1E0aER6a05MZks0eEJscmRLUXVSUi9hVEdlMlhNV1BNVCs5c2c2MFZDbm5RVVdhN0krZy9CRUdFDQpNaUFLSFRSbisvR24yTU41Q2RmRjhXTVhTV3lrTy9peTQwRHh6TVZpMW5NYk5GcEpzMVdxMm4wb3hDRHdxa2ZiDQpjdCtJYW1Nb1prdXJCbEFPalNZWS83ZlY2MG5tdTlDWnkxazJ4eS9SUmVPWmtGQzN5cVkvNVp4ZEFkcDhyL2wvDQpNVk5zaTlTMkRSTllHeGFLYXhVdHh3eVoxa25CTm9DSkpweXRWS0FWS0tBPQ0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQ0K
 """
-
 
 class RDPMainWindow(QMainWindow):
     def __init__(self):
@@ -100,6 +99,7 @@ class RDPMainWindow(QMainWindow):
             QMessageBox.critical(self, "Ошибка", f"Ошибка: {str(e)}")
             return False
 
+
     def connect_to_rdp(self):
         ''' Connect to RDC from Gateway'''
         workstation = self.workstation_input.text().strip()
@@ -169,8 +169,11 @@ class RDPMainWindow(QMainWindow):
         """
 
         # Сохраняем настройки в .rdp файл
-        with open('connection.rdp', 'w') as f:
-            f.write(rdp_file)
+        try:
+            with open('connection.rdp', 'w') as f:
+                f.write(rdp_file)
+        except:
+            return TRUE
 
         # Шифруем и сохраняем пароль
         try:
@@ -188,20 +191,27 @@ class RDPMainWindow(QMainWindow):
         finally:
             # Удаляем временный RDP файл
             if os.path.exists('connection.rdp'):
-                os.remove(rdp_file)
-
-@main_requires_admin
+                os.remove('connection.rdp')
+        
+@pyuac.main_requires_admin
 def main():
     app = QApplication(sys.argv)
     rdp_connector = RDPMainWindow()
     rdp_connector.show()
     sys.exit(app.exec())
 
-def is_admin():
+'''def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
-        return False
+        return False'''
+       
+
+'''    if not pyuac.isUserAdmin():
+        pyuac.runAsAdmin()'''
 
 if __name__ == '__main__':
-    main()
+    try: 
+        main()
+    except:
+        False
