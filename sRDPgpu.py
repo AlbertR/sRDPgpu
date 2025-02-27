@@ -6,8 +6,8 @@ import sys
 import os
 import base64
 import subprocess
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QComboBox, QLabel, QLineEdit, QPushButton, QToolButton, QMessageBox
-from PySide6.QtGui import QPixmap, QIcon
+from PySide6.QtWidgets import QApplication, QCheckBox, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QComboBox, QLabel, QLineEdit, QPushButton, QToolButton, QMessageBox, QStyledItemDelegate, QStyleOptionViewItem, QStyle
+from PySide6.QtGui import QPixmap, QIcon, QPalette
 from PySide6.QtCore import Qt
 import pyuac
 import yaml
@@ -26,20 +26,45 @@ CERT_BASE64 =  """
 LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tDQpNSUlDN0RDQ0FkU2dBd0lCQWdJUVR2dmkxQnFQUGF4R1cwTStCejNOOURBTkJna3Foa2lHOXcwQkFRc0ZBREFmDQpNUjB3R3dZRFZRUURFeFJtZEhBdWNtRmtkV2RoWkdWemFXZHVMbU52YlRBZUZ3MHlOVEF4TWpVeE5URXhNalZhDQpGdzB5TlRBM01qY3hOVEV4TWpWYU1COHhIVEFiQmdOVkJBTVRGR1owY0M1eVlXUjFaMkZrWlhOcFoyNHVZMjl0DQpNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQTQvTmRPT1F0Mnh3T1V0eWpuSWgxDQpkU1pXZW1SUEdPZDFkdjFIMXpKdDBOOEs4bWJtNWluaXZ3VGRCaGpQWFQrOTluUUlvakI1RUQydFR2OURGTklyDQpVK0ZDalpOTlQrZGFDQUR2anJJRFRZQzBhUHFuTmVCTi9nSVZza0hRL2pKY1RUNmpzdU41NStjYmZibDAxRENtDQpZNjFuS1RzcEw4cy96SFpBakRNZGQ3emhFRlA3YUd5QTV6RExZcVE4TGMxbzNwMXB4QjlOcHFFbDZIWGF6QWZ3DQpoUWx2NFM2VkJRQkl3VS8yWDNUNWVyb05NOFRHTmNQMDI1ckVra1pVcW5rbUJxL1prSVh1SG9wTkx2MXBoNzdiDQowMFZVdnRlWFVTTUNsVms5QlNZNjBmc0Nwa1lvQUxMekFmaExhdWUxdU1LazhzbVFTQzVZYjFDWFVSdUtoV01yDQpVUUlEQVFBQm95UXdJakFUQmdOVkhTVUVEREFLQmdnckJnRUZCUWNEQVRBTEJnTlZIUThFQkFNQ0JEQXdEUVlKDQpLb1pJaHZjTkFRRUxCUUFEZ2dFQkFNbEJucU1rUWpGU3Z1TzAyL1grK0hud1hYL3VlSW9iVjY0aGdoYTdzb3lWDQpYbGMwb2RGODRGWjltRllrcDR5dGlWWWIzR0pTcXZRR2dvYm5Yd3lqazFTNDVTOVBhM084d3hYR1RmdU9SUmI4DQo0ZXBnMnpsb1E0aER6a05MZks0eEJscmRLUXVSUi9hVEdlMlhNV1BNVCs5c2c2MFZDbm5RVVdhN0krZy9CRUdFDQpNaUFLSFRSbisvR24yTU41Q2RmRjhXTVhTV3lrTy9peTQwRHh6TVZpMW5NYk5GcEpzMVdxMm4wb3hDRHdxa2ZiDQpjdCtJYW1Nb1prdXJCbEFPalNZWS83ZlY2MG5tdTlDWnkxazJ4eS9SUmVPWmtGQzN5cVkvNVp4ZEFkcDhyL2wvDQpNVk5zaTlTMkRSTllHeGFLYXhVdHh3eVoxa25CTm9DSkpweXRWS0FWS0tBPQ0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQ0K
 """
 
+class CustomDelegate(QStyledItemDelegate):
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        if index.row() == 0:
+            option.palette.setColor(QPalette.ColorRole.Text, QColor("gray"))
+
 class RDPMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.initUI()
     
-    def load_config(self):
-        return
+    def load_history(self):
+        if not os.path.exists('history.yaml'):
+            return
+        
+        try:
+            with open('history.yaml', 'r', encoding='utf-8') as file:
+                history = yaml.safe_load(file)
 
-    def save_config(self):
-        return
+            if history and isinstance(history, dict):
+                for key, value in history.items():
+                    self.workstation_input.addItem(value)
+        except Exception as e:
+            return
+
+    def save_history(self):
+        workstations = {}
+        for index in range(1, self.workstation_input.count()):
+            workstations[index] = self.workstation_input.itemText(index).strip()
+
+        try:
+            with open('history.yaml', 'w', encoding='utf-8') as file:
+                yaml.dump(workstations, file, allow_unicode=True, default_flow_style=False)
+        except Exception as e:
+            return
     
     def initUI(self):
         self.setWindowTitle("RDC к студии RadugaDesign")
-        self.setFixedSize(320, 180)
+        self.setFixedSize(320, 200)
 
         # Cetral Widget and Layout
         central_widget = QWidget()
@@ -58,8 +83,25 @@ class RDPMainWindow(QMainWindow):
         # self.workstation_input = QLineEdit()
         self.workstation_input = QComboBox()
         self.workstation_input.setEditable(True)
-        self.workstation_input.setPlaceholderText("Имя станции:")
+        self.workstation_input.addItem("Имя станции...", None)
+        '''delegate = CustomDelegate()
+        self.workstation_input.setItemDelegate(delegate)'''
+        self.workstation_input.setStyleSheet("""
+            QComboBox {
+                padding: 0px;
+            }
+            QComboBox::item:first {
+                color: gray;
+            }
+            QComboBox::item {
+                color: black;
+            }
+        """)
+        self.workstation_input.setCurrentIndex(0)
+        # self.workstation_input.setPlaceholderText("Имя станции:")
         layoutV.addWidget(self.workstation_input)
+
+        self.load_history()
 
         self.login_input = QLineEdit()
         self.login_input.setPlaceholderText("Логин:")
@@ -91,6 +133,11 @@ class RDPMainWindow(QMainWindow):
         layoutH.addWidget(self.toggle_button)
 
         layoutV.addLayout(layoutH)
+
+        # Добавить опцию подключения в FullScreen
+        self.fullscreen_enable = QCheckBox("Подключиться в Full Screen")
+        self.fullscreen_enable.setChecked(False)
+        layoutV.addWidget(self.fullscreen_enable)
 
         self.button_connect = QPushButton('Подключиться')
         self.button_connect.clicked.connect(self.connect_to_rdp)
@@ -170,7 +217,11 @@ class RDPMainWindow(QMainWindow):
 
     def connect_to_rdp(self):
         ''' Connect to RDC from Gateway'''
-        workstation = self.workstation_input.currentText().strip()
+        if self.workstation_input.currentText().strip() != "Имя станции...":
+            workstation = self.workstation_input.currentText().strip()
+        else:
+            QMessageBox.critical(self, "Ошибка", f"Задайте имя станции.")
+            return
         # Проверяем есть ли текущий элемент в списке ранее подключаемых станций
         index = self.workstation_input.findText(workstation)
         if index == -1:
@@ -182,19 +233,27 @@ class RDPMainWindow(QMainWindow):
             QMessageBox.warning(self, 'Ошибка', 'Заполнение всех полей обязательно!')
             return
 
+        # Удалить проверку отсюда
+        # return
+        # Удалить проверку до сюда
+
         # Certificate installing
         if not self.installed_certificate():
             QMessageBox.warning(self, 'Ошибка', 'Ошибка установки сертификата!')
             return
+        if self.fullscreen_enable.isChecked():
+            full_screen = 1
+        else:
+            full_screen = 0
 
         # Формируем команду для подключения по RDP
         rdp_file = f"""
         screen mode id:i:1
-        use multimon:i:0
-        desktopwidth:i:2340
-        desktopheight:i:1336
+        use multimon:i:{full_screen}
+        desktopwidth:i:1900
+        desktopheight:i:1200
         session bpp:i:32
-        winposstr:s:0,1,4,8,2360,1383
+        winposstr:s:0,1,4,8,1920,1240
         compression:i:1
         keyboardhook:i:2
         audiocapturemode:i:0
@@ -204,7 +263,7 @@ class RDPMainWindow(QMainWindow):
         bandwidthautodetect:i:1
         displayconnectionbar:i:1
         enableworkspacereconnect:i:0
-        disable wallpaper:i:0
+        disable wallpaper:i:1
         allow font smoothing:i:0
         allow desktop composition:i:0
         disable full window drag:i:1
@@ -264,21 +323,17 @@ class RDPMainWindow(QMainWindow):
             # Удаляем временный RDP файл
             if os.path.exists('connection.rdp'):
                 os.remove('connection.rdp')
+
+    def closeEvent(self, event):
+        self.save_history()
+        event.accept()
         
 @pyuac.main_requires_admin
 def main():
     config_file = ''
     app = QApplication(sys.argv)
     rdp_connector = RDPMainWindow()
-    try:
-        if os.path.exists('config.yaml'):
-            rdp_connector.load_config()
-        else:
-            config_file = FALSE
-    except:
-        config_file = FALSE
     rdp_connector.show()
-    rdp_connector.save_config()
     sys.exit(app.exec())
 
 if __name__ == '__main__':
