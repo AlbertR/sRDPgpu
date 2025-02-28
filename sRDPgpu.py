@@ -233,8 +233,9 @@ class RDPMainWindow(QMainWindow):
             QMessageBox.warning(self, 'Ошибка', 'Заполнение всех полей обязательно!')
             return
 
-        # Удалить проверку отсюда
-        # return
+        # Получить максимальный размер рабочего стола
+        desktopSizeW = ctypes.windll.user32.GetSystemMetrics(0)
+        desktopSizeH = ctypes.windll.user32.GetSystemMetrics(1)
         # Удалить проверку до сюда
 
         # Certificate installing
@@ -243,15 +244,18 @@ class RDPMainWindow(QMainWindow):
             return
         if self.fullscreen_enable.isChecked():
             full_screen = 1
+            mode_screen = 2
         else:
             full_screen = 0
+            mode_screen = 1
 
         # Формируем команду для подключения по RDP
         rdp_file = f"""
-        screen mode id:i:1
+        screen mode id:i:{mode_screen}
         use multimon:i:{full_screen}
-        desktopwidth:i:1900
-        desktopheight:i:1200
+        desktopwidth:i:{desktopSizeW}
+        desktopheight:i:{desktopSizeH}
+        smart sizing:i:1
         session bpp:i:32
         winposstr:s:0,1,4,8,1920,1240
         compression:i:1
