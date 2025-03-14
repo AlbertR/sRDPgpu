@@ -6,6 +6,10 @@ import sys
 import os
 import base64
 import subprocess
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import padding
+#from Crypto.Cipher import AES 
 from PySide6.QtWidgets import QApplication, QCheckBox, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QComboBox, QLabel, QLineEdit, QPushButton, QToolButton, QMessageBox, QStyledItemDelegate, QStyleOptionViewItem, QStyle
 from PySide6.QtGui import QPixmap, QIcon, QPalette
 from PySide6.QtCore import Qt
@@ -51,7 +55,66 @@ class RDPMainWindow(QMainWindow):
         except Exception as e:
             return
 
+    def load_creds(self):
+
+        # Функция для расшифровки данных
+        def decrypt(ciphertext, key, iv):
+            # Создаем шифр
+            cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+            decryptor = cipher.decryptor()
+
+            # Расшифровываем данные
+            padded_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+
+            # Убираем padding
+            unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+            plaintext = unpadder.update(padded_plaintext) + unpadder.finalize()
+            return plaintext
+
+        if not os.path.exists('creds.yaml'):
+            return
+
+        try:
+            with open('creds.yaml', 'r', encoding='utf-8') as file:
+                creds = yaml.safe_load(file)
+
+            if creds and isinstance(creds, dict):
+                key = bytes.fromhex(creds[1])
+                iv = bytes.fromhex(creds[2])
+                login = bytes.fromhex(creds[3])
+                password = bytes.fromhex(creds[4])
+       
+        except Exception as e:
+            return
+
+        decrypted_login = decrypt(login, key, iv)
+        decrypted_password = decrypt(password, key, iv)   
+
+        self.login_input.setText(decrypted_login.decode())
+        self.password_input.setText(decrypted_password.decode())
+
+        return
+
     def save_history(self):
+        
+        key = os.urandom(32)  # 256-битный ключ
+        iv = os.urandom(16)
+        
+        # Функция для шифрования данных
+        def encrypt(plaintext, key, iv):
+            # Добавляем padding к данным
+            pt = plaintext.encode()
+            padder = padding.PKCS7(algorithms.AES.block_size).padder()
+            padded_data = padder.update(pt) + padder.finalize()
+
+            # Создаем шифр
+            cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+            encryptor = cipher.encryptor()
+
+            # Шифруем данные
+            ciphertext = encryptor.update(padded_data) + encryptor.finalize()
+            return ciphertext
+
         workstations = {}
         for index in range(1, self.workstation_input.count()):
             workstations[index] = self.workstation_input.itemText(index).strip()
@@ -61,7 +124,44 @@ class RDPMainWindow(QMainWindow):
                 yaml.dump(workstations, file, allow_unicode=True, default_flow_style=False)
         except Exception as e:
             return
+
+        log_pass = {}
+        login = encrypt(self.login_input.text().strip(), key, iv)
+        password = encrypt(self.password_input.text().strip(), key, iv)
+
+        log_pass[1]=key.hex()
+        log_pass[2]=iv.hex()
+        log_pass[3]=login.hex()
+        log_pass[4]=password.hex()
+
+        try:
+            with open('creds.yaml', 'w', encoding='utf-8') as file:
+                yaml.dump(log_pass, file, allow_unicode=True, default_flow_style=False)
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Немогу сохранить доступы.")
+            return
+        return
     
+    def save_creds(self):
+
+        # log_pass = {}
+        # key = ''
+
+        # key = Fernet.generate_key()
+        # cipher_suite=Fernet(key)
+        
+        # log_pass[1]=key
+        # log_pass[2]=cipher_suite.encrypt(self.login_input.itemText.strip())
+        # log_pass[3]=cipher_suite.encrypt(self.password_input.itemText.stip())
+
+        # try:
+        #     with open('creds.yaml', 'w', encoding='utf-8') as file:
+        #         yaml.dump(log_pass, file, allow_unicode=True, default_flow_style=False)
+        # except Exception as e:
+        #     QMessageBox.critical(self, "Ошибка", f"Немогу сохранить доступы.")
+        #     return
+        return
+
     def initUI(self):
         self.setWindowTitle("RDC к студии RadugaDesign")
         self.setFixedSize(320, 200)
@@ -111,6 +211,8 @@ class RDPMainWindow(QMainWindow):
         self.password_input.setPlaceholderText("Пароль:")
         self.password_input.setEchoMode(QLineEdit.Password)
         #self.password_input.
+
+        self.load_creds()
 
         logo_eye_black = self.load_eye(EYE1_BASE64)
         self.toggle_button = QToolButton() # "👁",self
@@ -291,9 +393,9 @@ class RDPMainWindow(QMainWindow):
         shell working directory:s:
         gatewayhostname:s:ftp.radugadesign.com:443
         gatewayusagemethod:i:2
-        gatewaycredentialssource:i:0
+        gatewaycredentialssource:i:2  
         gatewayprofileusagemethod:i:1
-        promptcredentialonce:i:0
+        promptcredentialonce:i:2
         gatewaybrokeringtype:i:0
         use redirection server name:i:0
         rdgiskdcproxy:i:0
@@ -312,7 +414,13 @@ class RDPMainWindow(QMainWindow):
 
         # Шифруем и сохраняем пароль
         try:
+            cmd = f'cmdkey /add:TERMSRV/{workstation} /user:{login} /pass:{password}'
+            subprocess.run(cmd, shell=True, check=True)
             cmd = f'cmdkey /generic:TERMSRV/{workstation} /user:{login} /pass:{password}'
+            subprocess.run(cmd, shell=True, check=True)
+            cmd = f'cmdkey /add:ftp.radugadesign.com /user:{login} /pass:{password}'
+            subprocess.run(cmd, shell=True, check=True)
+            cmd = f'cmdkey /generic:ftp.radugadesign.com /user:{login} /pass:{password}'
             subprocess.run(cmd, shell=True, check=True)
         except:
             QMessageBox.critical(self, "Ошибка", "Ошибка при сохранении учетных данных")
@@ -330,6 +438,7 @@ class RDPMainWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.save_history()
+        self.save_creds()
         event.accept()
         
 @pyuac.main_requires_admin
