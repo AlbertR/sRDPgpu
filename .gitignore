@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/build/sRDPgpu.1.1.1
+/dist/creds.yaml
+/dist/sRDPgpu.1.2.0.exe
+/dist/sRDPgpu.1.2.0.rar
