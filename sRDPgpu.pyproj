@@ -12,7 +12,7 @@
     <Name>sRDPgpu</Name>
     <RootNamespace>sRDPgpu</RootNamespace>
     <IsWindowsApplication>True</IsWindowsApplication>
-    <TestFramework>none</TestFramework>
+    <TestFramework>Pytest</TestFramework>
     <UnitTestPattern>test*.py</UnitTestPattern>
     <UnitTestRootDirectory>.</UnitTestRootDirectory>
   </PropertyGroup>
