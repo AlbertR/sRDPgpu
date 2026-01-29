@@ -243,6 +243,7 @@ class RDPMainWindow(QMainWindow):
 
         self.button_connect = QPushButton('Подключиться')
         self.button_connect.clicked.connect(self.connect_to_rdp)
+        self.button_connect.setDefault(True)
         layoutV.addWidget(self.button_connect)
 
         self.setLayout(layoutV)
