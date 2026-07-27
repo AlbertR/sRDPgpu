@@ -1,4 +1,4 @@
-pyinstaller --noconfirm --onefile --windowed --name "sRDPgpu" sRDPgpu.py
+pyinstaller --noconfirm --onefile --windowed --name "sRDPgpu.1.2.1" --icon=RDapp_logo_v03.ico sRDPgpu.py
 
 
 -= certificate renew =-
